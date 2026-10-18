@@ -16,7 +16,7 @@ label{display:block;font-weight:650;margin-bottom:6px;font-size:.94rem}input{wid
 button{border:0;background:var(--green2);color:white;border-radius:10px;padding:12px 18px;font:inherit;font-weight:700;cursor:pointer}.secondary{background:#e8eee9;color:#20372a}
 .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.note,.small{color:var(--muted);font-size:.86rem}.status{padding:12px 14px;border-radius:10px;background:#edf5ef;border:1px solid #c9dfcf;margin-bottom:14px}.status.warn{background:#fff4e5;border-color:#f0d4a9}.status.error{background:#fff0ef;border-color:#e9c2bf}
 .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:14px 0}.metric{background:#f5f8f5;border:1px solid var(--line);padding:12px;border-radius:10px}.k{font-size:.82rem;color:var(--muted)}.v{font-size:1.3rem;font-weight:750;color:var(--green);overflow-wrap:anywhere}
-canvas{display:block;width:100%;height:320px;border:1px solid var(--line);border-radius:10px;background:#fbfdfb}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{text-align:right;padding:9px 10px;border-bottom:1px solid #e3e9e4;white-space:nowrap}th{background:#f1f5f1;font-size:.88rem}th:first-child,td:first-child{text-align:left}footer{text-align:center;color:var(--muted);font-size:.8rem;padding:0 12px 24px}
+canvas{display:block;width:100%;height:auto;aspect-ratio:1000 / 420;border:1px solid var(--line);border-radius:10px;background:#fbfdfb}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{text-align:right;padding:9px 10px;border-bottom:1px solid #e3e9e4;white-space:nowrap}th{background:#f1f5f1;font-size:.88rem}th:first-child,td:first-child{text-align:left}footer{text-align:center;color:var(--muted);font-size:.8rem;padding:0 12px 24px}
 </style>
 </head>
 <body>
@@ -25,7 +25,7 @@ canvas{display:block;width:100%;height:320px;border:1px solid var(--line);border
 <section class="panel">
 <h2>入力条件</h2>
 <div class="grid">
-<div><label for="speed">実際の球速（m/s）</label><input id="speed" type="number" min="1" max="60" step="0.1" value="33"></div>
+<div><label for="speed">実際の球速（km/h）</label><input id="speed" type="number" min="3.6" max="216" step="0.1" value="118.8"></div>
 <div><label for="distance">送球距離（m）</label><input id="distance" type="number" min="1" max="150" step="0.1" value="40"></div>
 <div><label for="targetTime">目標到達時間（秒・任意）</label><input id="targetTime" type="number" min="0.1" max="10" step="0.05" value="1.3"></div>
 </div>
@@ -54,7 +54,8 @@ canvas{display:block;width:100%;height:320px;border:1px solid var(--line);border
 <p>重力のみを受ける斜方投射として計算します。リリース高と捕球高が等しいため、成立する低い方の投射角度を選びます。</p>
 <p><strong>水平位置：</strong> x = v cos(θ) × t</p>
 <p><strong>高さ：</strong> h = 1.5 + v sin(θ) × t − ½gt²（g = 9.81 m/s²）</p>
-<p class="note">空気抵抗・回転による揚力・風は考慮していません。現実の送球ではこれらの影響があるため、表示値は理論上の目安です。</p>
+<p>追加表示の「0.2秒短縮に必要な球速」は、同じ送球距離・リリース高・捕球高を保ち、低い軌道で理論上の飛行時間を現在より0.2秒短くするために必要な初速を計算しています。球速アップ量は、入力した現在の球速との差をkm/hで示します。</p>
+<p class="note">空気抵抗・回転による揚力・風は考慮していません。現実の送球ではこれらの影響があるため、表示値は理論上の目安です。現在の飛行時間が0.2秒以下の場合、短縮後の飛行時間が正にならないため算出できません。</p>
 </section>
 </main>
 <footer>重力のみを考慮した簡易モデル</footer>
@@ -67,14 +68,25 @@ function metric(k,v){return `<div class="metric"><div class="k">${k}</div><div c
 function heightAt(v,theta,x){const t=x/(v*Math.cos(theta));return h0+v*Math.sin(theta)*t-.5*g*t*t;}
 function timeAt(v,theta,x){return x/(v*Math.cos(theta));}
 function calc(){
- const v=Number($("speed").value),D=Number($("distance").value),target=Number($("targetTime").value);
+ const speedKmh=Number($("speed").value),v=speedKmh/3.6,D=Number($("distance").value),target=Number($("targetTime").value);
  $("metrics").innerHTML="";$("results").hidden=true;$("heightRows").innerHTML="";
- if(!(v>0&&v<=60&&D>0&&D<=150&&target>0&&target<=10)){status("球速・距離・目標到達時間を有効な範囲で入力してください。","error");return;}
+ if(!(speedKmh>=3.6&&speedKmh<=216&&D>0&&D<=150&&target>0&&target<=10)){status("球速・距離・目標到達時間を有効な範囲で入力してください。","error");return;}
  // Same release and catch heights: D = v^2 sin(2 theta) / g.
  const q=g*D/(v*v);
  if(q>1+1e-10){status("この球速では、指定距離で捕球高1.5 mに戻る軌道が成立しません。球速を上げるか、送球距離を短くしてください。","error");return;}
  const theta=.5*Math.asin(Math.min(1,q)); // lower-angle solution only
  const flight=D/(v*Math.cos(theta));
+ // Required speed for the same distance and equal release/catch heights,
+ // if the low-trajectory flight time is shortened by 0.2 s.
+ const shortenedTime = flight - 0.2;
+ let requiredSpeed = NaN, speedIncreaseKmh = NaN, requiredAngle = NaN;
+ if (shortenedTime > 0) {
+   const requiredVx = D / shortenedTime;
+   const requiredVy = g * shortenedTime / 2;
+   requiredSpeed = Math.sqrt(requiredVx * requiredVx + requiredVy * requiredVy);
+   requiredAngle = Math.atan2(requiredVy, requiredVx);
+   speedIncreaseKmh = (requiredSpeed - v) * 3.6;
+ }
  const diff=flight-target, minT=Math.max(0,target-tolerance),maxT=target+tolerance;
  const within=flight>=minT-1e-9&&flight<=maxT+1e-9;
  status(within
@@ -86,29 +98,61 @@ function calc(){
  metric("目標時間",fmt(target,2)+" 秒"),
  metric("目標時間との差",(diff>=0?"+":"")+fmt(diff,3)+" 秒"),
  metric("許容時間範囲",fmt(minT,2)+"〜"+fmt(maxT,2)+" 秒"),
- metric("捕球地点の高さ",fmt(heightAt(v,theta,D),3)+" m")
+ metric("捕球地点の高さ",fmt(heightAt(v,theta,D),3)+" m"),
+ metric("0.2秒短縮後の目標飛行時間",Number.isFinite(shortenedTime)?fmt(shortenedTime,3)+" 秒":"算出不可"),
+ metric("0.2秒短縮に必要な球速",Number.isFinite(requiredSpeed)?fmt(requiredSpeed*3.6,1)+" km/h":"算出不可"),
+ metric("必要な球速アップ量",Number.isFinite(speedIncreaseKmh)?(speedIncreaseKmh>=0?"+":"")+fmt(speedIncreaseKmh,1)+" km/h":"算出不可")
  ].join("");
  const xs=[];for(let x=10;x<D-1e-7;x+=10)xs.push(x);if(!xs.length||Math.abs(xs[xs.length-1]-D)>1e-7)xs.push(D);else xs[xs.length-1]=D;
  $("heightRows").innerHTML=xs.map(x=>`<tr><td>${fmt(x,1)} m</td><td>${fmt(heightAt(v,theta,x),2)} m</td><td>${fmt(timeAt(v,theta,x),3)} 秒</td></tr>`).join("");
  draw(v,D,theta);$("results").hidden=false;
 }
+let lastPlot = null;
 function draw(v,D,theta){
- const c=$("plot"),ctx=c.getContext("2d"),W=c.width,H=c.height;ctx.clearRect(0,0,W,H);
- const L=62,R=24,T=24,B=48,pw=W-L-R,ph=H-T-B;
+ lastPlot={v,D,theta};
+ const c=$("plot"),ctx=c.getContext("2d");
+ const W=Math.max(280,Math.floor(c.clientWidth)),H=Math.max(180,Math.floor(c.clientWidth*0.42));
+ const dpr=Math.max(1,window.devicePixelRatio||1);
+ if(c.width!==Math.round(W*dpr)||c.height!==Math.round(H*dpr)){
+   c.width=Math.round(W*dpr);c.height=Math.round(H*dpr);
+ }
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ ctx.clearRect(0,0,W,H);
+ const mobile=W<480;
+ const L=mobile?42:62,R=mobile?12:24,T=mobile?18:24,B=mobile?38:48,pw=W-L-R,ph=H-T-B;
  let maxY=1.5;for(let i=0;i<=200;i++)maxY=Math.max(maxY,heightAt(v,theta,D*i/200));maxY=Math.max(2,Math.ceil((maxY+.3)/.5)*.5);
  const X=x=>L+x/D*pw,Y=y=>T+(maxY-y)/maxY*ph;
- ctx.font="14px system-ui,sans-serif";ctx.strokeStyle="#e1e8e2";ctx.lineWidth=1;
- for(let y=0;y<=maxY+1e-8;y+=.5){ctx.beginPath();ctx.moveTo(L,Y(y));ctx.lineTo(W-R,Y(y));ctx.stroke();ctx.fillStyle="#58675e";ctx.textAlign="right";ctx.fillText(y.toFixed(1),L-9,Y(y)+5);}
- for(let x=0;x<=D+1e-8;x+=10){ctx.beginPath();ctx.moveTo(X(x),T);ctx.lineTo(X(x),H-B);ctx.stroke();ctx.fillStyle="#58675e";ctx.textAlign="center";ctx.fillText(x.toFixed(0),X(x),H-B+22);}
- ctx.strokeStyle="#b66a24";ctx.setLineDash([7,5]);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(L,Y(h1));ctx.lineTo(W-R,Y(h1));ctx.stroke();ctx.setLineDash([]);
- ctx.strokeStyle="#1f6b49";ctx.lineWidth=4;ctx.beginPath();for(let i=0;i<=200;i++){const x=D*i/200,y=heightAt(v,theta,x);if(i===0)ctx.moveTo(X(x),Y(y));else ctx.lineTo(X(x),Y(y));}ctx.stroke();
- ctx.fillStyle="#123b2a";ctx.beginPath();ctx.arc(X(D),Y(h1),6,0,Math.PI*2);ctx.fill();
- ctx.fillStyle="#18231d";ctx.textAlign="center";ctx.font="bold 15px system-ui,sans-serif";ctx.fillText("水平距離（m）",L+pw/2,H-8);
- ctx.save();ctx.translate(17,T+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText("高さ（m）",0,0);ctx.restore();
- ctx.textAlign="right";ctx.font="13px system-ui,sans-serif";ctx.fillStyle="#9b5c20";ctx.fillText("捕球高 1.5 m",W-R-4,Y(h1)-8);
+ const tickFont=Math.max(10,Math.min(14,W/32));
+ const axisFont=Math.max(11,Math.min(15,W/30));
+ const noteFont=Math.max(10,Math.min(13,W/35));
+ const fontStack='-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif';
+ ctx.font=`${tickFont}px ${fontStack}`;
+ ctx.strokeStyle="#e1e8e2";ctx.lineWidth=1;
+ for(let y=0;y<=maxY+1e-8;y+=.5){
+   ctx.beginPath();ctx.moveTo(L,Y(y));ctx.lineTo(W-R,Y(y));ctx.stroke();
+   ctx.fillStyle="#58675e";ctx.textAlign="right";ctx.fillText(y.toFixed(1),L-7,Y(y)+tickFont*.35);
+ }
+ const xStep=D<=30?5:10;
+ for(let x=0;x<=D+1e-8;x+=xStep){
+   ctx.beginPath();ctx.moveTo(X(x),T);ctx.lineTo(X(x),H-B);ctx.stroke();
+   ctx.fillStyle="#58675e";ctx.textAlign="center";ctx.fillText(x.toFixed(0),X(x),H-B+tickFont+4);
+ }
+ if(Math.abs(Math.round(D/xStep)*xStep-D)>1e-7){
+   ctx.beginPath();ctx.moveTo(X(D),T);ctx.lineTo(X(D),H-B);ctx.stroke();
+   ctx.fillStyle="#58675e";ctx.textAlign="center";ctx.fillText(D.toFixed(0),X(D),H-B+tickFont+4);
+ }
+ ctx.strokeStyle="#b66a24";ctx.setLineDash([6,4]);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(L,Y(h1));ctx.lineTo(W-R,Y(h1));ctx.stroke();ctx.setLineDash([]);
+ ctx.strokeStyle="#1f6b49";ctx.lineWidth=mobile?2.5:4;ctx.beginPath();
+ for(let i=0;i<=200;i++){const x=D*i/200,y=heightAt(v,theta,x);if(i===0)ctx.moveTo(X(x),Y(y));else ctx.lineTo(X(x),Y(y));}
+ ctx.stroke();
+ ctx.fillStyle="#123b2a";ctx.beginPath();ctx.arc(X(D),Y(h1),mobile?4:6,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#18231d";ctx.textAlign="center";ctx.font=`600 ${axisFont}px ${fontStack}`;ctx.fillText("水平距離（m）",L+pw/2,H-6);
+ ctx.save();ctx.translate(mobile?12:17,T+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText("高さ（m）",0,0);ctx.restore();
+ ctx.textAlign="right";ctx.font=`${noteFont}px ${fontStack}`;ctx.fillStyle="#9b5c20";ctx.fillText("捕球高 1.5 m",W-R-3,Math.max(noteFont+2,Y(h1)-6));
 }
+window.addEventListener("resize",()=>{if(lastPlot)draw(lastPlot.v,lastPlot.D,lastPlot.theta);});
 $("calculate").addEventListener("click",calc);
-$("reset").addEventListener("click",()=>{$("speed").value="33";$("distance").value="40";$("targetTime").value="1.3";calc();});
+$("reset").addEventListener("click",()=>{$("speed").value="118.8";$("distance").value="40";$("targetTime").value="1.3";calc();});
 calc();
 })();
 </script>
