@@ -1,258 +1,203 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#142d4e">
-<title>外野送球 軌道シミュレーター</title>
-<style>
-:root{--navy:#142d4e;--blue:#2463eb;--bg:#f3f6fa;--card:#fff;--text:#172033;--muted:#657188;--line:#dce3ed;--accent:#e7efff}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.45}
-header{background:var(--navy);color:white;padding:22px 18px 20px}
-header h1{font-size:21px;line-height:1.25;margin:0 0 6px}
-header p{font-size:13px;margin:0;color:#d9e5f6}
-main{max-width:760px;margin:auto;padding:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:13px;box-shadow:0 2px 8px #17203308}
-h2{font-size:16px;margin:0 0 13px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-label{display:block;font-size:13px;font-weight:650;margin-bottom:6px}
-input,select{width:100%;font:inherit;font-size:16px;padding:11px 10px;border:1px solid #c9d3e1;border-radius:10px;background:white;color:var(--text)}
-.hint{font-size:12px;color:var(--muted);margin-top:5px}
-button{border:0;border-radius:11px;padding:13px 15px;font-size:15px;font-weight:700;cursor:pointer}
-.primary{width:100%;background:var(--blue);color:white}
-.secondary{background:var(--accent);color:#1747a6}
-.actions{display:grid;grid-template-columns:1fr auto;gap:9px;margin-top:15px}
-.results{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.metric{background:#f4f7fc;border-radius:12px;padding:12px 8px;text-align:center}
-.metric .k{font-size:12px;color:var(--muted)}
-.metric .v{font-size:22px;font-weight:750;margin-top:3px;font-variant-numeric:tabular-nums}
-.metric .u{font-size:11px;color:var(--muted)}
-.status{padding:11px;border-radius:10px;font-size:13px;background:#fff5df;color:#744b00;margin-top:12px}
-.good{background:#e8f7ee;color:#17633a}
-.error{background:#ffeded;color:#9d1d1d}
-canvas{width:100%;height:240px;display:block;border:1px solid var(--line);border-radius:12px;background:#fbfdff}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{text-align:right;padding:9px 7px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
-th:first-child,td:first-child{text-align:left}
-th{color:var(--muted);font-weight:650}
-.small{font-size:12px;color:var(--muted)}
-.note{font-size:13px;color:var(--muted);line-height:1.55}
-footer{font-size:11px;color:var(--muted);text-align:center;padding:4px 16px 24px}
-@media(max-width:420px){.grid{gap:9px}.card{padding:13px}.metric .v{font-size:19px}.results{gap:6px}}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123b2b">
+  <title>外野送球 軌道シミュレーター</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    :root { color-scheme: light; --green:#123b2b; --line:#d8e0dc; --muted:#5d6b64; --bg:#f4f7f5; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:#17211b; background:var(--bg); }
+    main { max-width:850px; margin:0 auto; padding:20px 14px 40px; }
+    h1 { font-size:1.45rem; margin:0 0 8px; }
+    h2 { font-size:1.05rem; margin:0 0 12px; }
+    p { line-height:1.6; }
+    .sub { color:var(--muted); font-size:.92rem; margin-top:0; }
+    .card { background:white; border:1px solid var(--line); border-radius:14px; padding:16px; margin:14px 0; }
+    .inputs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    label { display:block; font-size:.9rem; font-weight:650; }
+    input { width:100%; margin-top:6px; padding:11px 10px; border:1px solid #aebbb4; border-radius:9px; font:inherit; background:white; }
+    .unit { color:var(--muted); font-size:.8rem; font-weight:400; }
+    button { margin-top:14px; width:100%; padding:12px; border:0; border-radius:10px; background:var(--green); color:white; font:inherit; font-weight:700; }
+    .metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .metric { background:#f7faf8; border:1px solid var(--line); border-radius:10px; padding:12px; }
+    .metric .label { color:var(--muted); font-size:.82rem; }
+    .metric .value { font-size:1.35rem; font-weight:750; margin-top:4px; overflow-wrap:anywhere; }
+    .notice { border-left:4px solid #b87915; padding:9px 12px; background:#fff8e9; border-radius:4px; line-height:1.55; }
+    .error { border-left-color:#b42318; background:#fff1f0; }
+    .ok { border-left-color:#23764c; background:#effaf3; }
+    .scroll { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }
+    th,td { text-align:right; padding:9px 7px; border-bottom:1px solid var(--line); white-space:nowrap; }
+    th:first-child,td:first-child { text-align:left; }
+    th { font-size:.84rem; color:var(--muted); }
+    #plot { width:100%; height:auto; display:block; background:#fbfdfb; border:1px solid var(--line); border-radius:10px; }
+    .small { color:var(--muted); font-size:.82rem; }
+    @media(max-width:480px) { .inputs { grid-template-columns:1fr 1fr; gap:9px; } .card { padding:13px; } .metric .value { font-size:1.18rem; } }
+  </style>
 </head>
 <body>
-<header>
-  <h1>外野送球 軌道シミュレーター</h1>
-  <p>Rapsodo計測値を使った試作モデル｜リリース高・目標高は地面から1.50 mに固定</p>
-</header>
 <main>
+  <h1>外野送球 軌道シミュレーター</h1>
+  <p class="sub">重力のみを考慮した斜方投射モデル（回転・空気抵抗は無視）</p>
+
   <section class="card">
-    <h2>送球条件</h2>
-    <div class="grid">
-      <div><label for="distance">水平送球距離 (m)</label><input id="distance" type="number" min="1" max="150" step="0.1" value="90"></div>
-      <div><label for="speed">初速度 (m/s)</label><input id="speed" type="number" min="1" max="50" step="0.1" value="35"></div>
-      <div><label for="time">到達時間 (s)</label><input id="time" type="number" min="0.1" max="10" step="0.01" value="2.8"></div>
-      <div><label for="spin">回転数 (rpm)</label><input id="spin" type="number" min="0" max="5000" step="10" value="1200"></div>
-      <div><label for="eff">回転効率 (%)</label><input id="eff" type="number" min="0" max="100" step="1" value="70"></div>
-      <div><label for="axis">回転軸の向き</label>
-        <select id="axis">
-          <option value="backspin">バックスピン（浮き上がる方向）</option>
-          <option value="topspin">トップスピン（下向きの変化）</option>
-          <option value="sidespin">サイドスピン（横向きの変化）</option>
-          <option value="none">回転による力なし</option>
-        </select>
-      </div>
+    <h2>入力条件</h2>
+    <div class="inputs">
+      <label>指定する水平距離 <span class="unit">(m)</span>
+        <input id="distance" type="number" min="1" max="150" step="0.1" value="40">
+      </label>
+      <label>球速 <span class="unit">(m/s)</span>
+        <input id="speed" type="number" min="1" max="60" step="0.1" value="33">
+      </label>
+      <label>到達時間 <span class="unit">(秒)</span>
+        <input id="time" type="number" min="0.01" max="10" step="0.01" value="1.5">
+      </label>
+      <label>リリース高・到達高 <span class="unit">(m・地面から)</span>
+        <input id="height" type="number" min="0" max="5" step="0.1" value="1.5">
+      </label>
     </div>
-    <p class="hint">※ 回転軸の向きは簡易選択です。Rapsodoの3D回転軸角度を直接入力する仕様ではありません。</p>
-    <div class="actions">
-      <button class="primary" id="calculate">軌道を計算</button>
-      <button class="secondary" id="reset">初期値</button>
-    </div>
-    <div id="status" class="status">これは試作モデルです。計測機器の実データと照合する前の推定値として扱ってください。</div>
+    <button id="calculate">軌道を計算</button>
+    <p class="small">投射角度は「球速・到達時間・リリース位置と到達位置が同じ高さ」の条件から計算します。指定水平距離は、軌道の整合性確認と高さの参照に使用します。</p>
   </section>
 
   <section class="card">
-    <h2>推定結果</h2>
-    <div class="results">
-      <div class="metric"><div class="k">投射角度</div><div class="v" id="angle">—</div><div class="u">水平面から</div></div>
-      <div class="metric"><div class="k">10 m地点</div><div class="v" id="h10">—</div><div class="u">地面から (m)</div></div>
-      <div class="metric"><div class="k">20 m地点</div><div class="v" id="h20">—</div><div class="u">地面から (m)</div></div>
-    </div>
-    <div style="height:10px"></div>
-    <div class="results">
-      <div class="metric"><div class="k">30 m地点</div><div class="v" id="h30">—</div><div class="u">地面から (m)</div></div>
-      <div class="metric"><div class="k">中間地点</div><div class="v" id="hMid">—</div><div class="u">地面から (m)</div></div>
-      <div class="metric"><div class="k">終点の誤差</div><div class="v" id="endErr">—</div><div class="u">目標高1.50 mとの差</div></div>
+    <h2>計算結果</h2>
+    <div id="message" class="notice" role="status"></div>
+    <div class="metrics" style="margin-top:12px">
+      <div class="metric"><div class="label">計算された投射角度</div><div class="value" id="angle">—</div></div>
+      <div class="metric"><div class="label">到達時間から求めた水平距離</div><div class="value" id="range">—</div></div>
+      <div class="metric"><div class="label">指定距離での高さ</div><div class="value" id="targetHeight">—</div></div>
+      <div class="metric"><div class="label">指定距離と計算距離の差</div><div class="value" id="rangeDiff">—</div></div>
     </div>
   </section>
 
   <section class="card">
-    <h2>推定軌道</h2>
-    <canvas id="plot" width="700" height="300" aria-label="ボールの軌道グラフ"></canvas>
-    <p class="small">横軸：水平距離（m）／縦軸：地面からの高さ（m）。縦方向は見やすさのため自動スケール。</p>
+    <h2>軌道グラフ</h2>
+    <svg id="plot" viewBox="0 0 700 300" role="img" aria-label="ボール軌道の高さグラフ"></svg>
+    <p class="small">縦軸は地面からの高さ、横軸はリリース地点からの水平距離です。計算上の着地点までを表示します。</p>
   </section>
 
   <section class="card">
-    <h2>地点別の高さと到達時間</h2>
-    <div style="overflow-x:auto">
+    <h2>地点ごとの高さ</h2>
+    <div class="scroll">
       <table>
-        <thead><tr><th>水平距離</th><th>高さ (m)</th><th>経過時間 (s)</th><th>速度 (m/s)</th></tr></thead>
-        <tbody id="rows"><tr><td colspan="4" style="text-align:center">計算してください</td></tr></tbody>
+        <thead><tr><th>リリース後の水平距離</th><th>経過時間</th><th>地面からの高さ</th><th>その時点の速度</th></tr></thead>
+        <tbody id="rows"></tbody>
       </table>
     </div>
   </section>
-
-  <section class="card">
-    <h2>モデルの前提・注意</h2>
-    <p class="note">この試作版は、重力・二次抗力・簡易化したマグヌス力を使い、指定距離と到達時間に合う投射角度を数値探索します。空気密度、抗力係数、揚力係数は暫定値です。回転軸は現状、バックスピン／トップスピン／サイドスピンの簡易選択であり、Rapsodoの回転軸データを正確に解釈するものではありません。</p>
-    <p class="note">Rapsodoの出力項目・回転軸の座標定義・変化量の定義は、機種と設定により確認が必要です。結果は実測軌道と比較するまで、選手評価や指導の決定値として使わないでください。</p>
-  </section>
+  <p class="small">モデルの前提：重力加速度 9.81 m/s²、一定の初速度、空気抵抗・風・回転による揚力は無視。実際の野球ボールの軌道を完全に再現するものではありません。</p>
 </main>
-<footer>個人利用向け試作版｜データは端末内で計算し、外部送信しません。</footer>
 <script>
-const $ = id => document.getElementById(id);
-const defaults = {distance:90,speed:35,time:2.8,spin:1200,eff:70,axis:'backspin'};
-const g=9.80665, rho=1.20, mass=0.145, diameter=0.073, area=Math.PI*(diameter/2)**2;
-// Preliminary constants only; require calibration against actual baseball flight data.
-const Cd=0.35;
-function params(){
- return {D:+$('distance').value,v0:+$('speed').value,T:+$('time').value,spin:+$('spin').value,eff:+$('eff').value/100,axis:$('axis').value};
-}
-function accel(pos,vel,p){
- const speed=Math.hypot(vel.x,vel.y,vel.z)||1e-9;
- const dragScale=0.5*rho*Cd*area/mass*speed;
- let ax=-dragScale*vel.x, ay=-dragScale*vel.y, az=-g-dragScale*vel.z;
- // Simplified Magnus model: force direction based on spin orientation category.
- // Effective spin is not a full 3D Rapsodo spin-axis reconstruction.
- const omega=p.spin*2*Math.PI/60*p.eff;
- const S=diameter*omega/(2*speed);
- const Cl=Math.max(-0.25,Math.min(0.25,0.09+0.60*S)); // provisional empirical approximation
- const liftScale=0.5*rho*area/mass*speed*speed*Cl;
- if(p.axis==='backspin') az += liftScale;
- if(p.axis==='topspin') az -= liftScale;
- if(p.axis==='sidespin') ay += liftScale;
- return {x:ax,y:ay,z:az};
-}
-function deriv(s,p){
- const a=accel(s,s.v,p);
- return {x:s.v.x,y:s.v.y,z:s.v.z,v:{x:a.x,y:a.y,z:a.z}};
-}
-function add(s,k,h){
- return {x:s.x+k.x*h,y:s.y+k.y*h,z:s.z+k.z*h,
-   v:{x:s.v.x+k.v.x*h,y:s.v.y+k.v.y*h,z:s.v.z+k.v.z*h}};
-}
-function rk4(s,h,p){
- const k1=deriv(s,p), k2=deriv(add(s,k1,h/2),p), k3=deriv(add(s,k2,h/2),p), k4=deriv(add(s,k3,h),p);
- const mix=(a,b,c,d)=>(a+2*b+2*c+d)/6;
- return {x:s.x+h*mix(k1.x,k2.x,k3.x,k4.x),
- y:s.y+h*mix(k1.y,k2.y,k3.y,k4.y),
- z:s.z+h*mix(k1.z,k2.z,k3.z,k4.z),
- v:{x:s.v.x+h*mix(k1.v.x,k2.v.x,k3.v.x,k4.v.x),
- y:s.v.y+h*mix(k1.v.y,k2.v.y,k3.v.y,k4.v.y),
- z:s.v.z+h*mix(k1.v.z,k2.v.z,k3.v.z,k4.v.z)}};
-}
-function simulate(p,theta,dt=0.002){
- const s={x:0,y:0,z:0,v:{x:p.v0*Math.cos(theta),y:0,z:p.v0*Math.sin(theta)}};
- const arr=[{x:0,t:0,z:0,v:p.v0}]; let t=0, prev={...s};
- while(t<p.T+0.05 && s.x<p.D+1 && t<10){
-   prev={...s,v:{...s.v}}; const oldT=t;
-   const next=rk4(s,dt,p); Object.assign(s,next); t+=dt;
-   arr.push({x:s.x,t,z:s.z,v:Math.hypot(s.v.x,s.v.y,s.v.z)});
-   if(s.x>=p.D) break;
- }
- return {arr,final:s,t};
-}
-function interpolateX(arr,x){
- for(let i=1;i<arr.length;i++){
-   if(arr[i].x>=x){
-    const a=arr[i-1],b=arr[i],f=(x-a.x)/(b.x-a.x||1);
-    return {x,t:a.t+(b.t-a.t)*f,z:a.z+(b.z-a.z)*f,v:a.v+(b.v-a.v)*f};
-   }
- }
- return null;
-}
-function evalAngle(p,theta){
- const r=simulate(p,theta);
- const hit=interpolateX(r.arr,p.D);
- if(!hit) return null;
- return {diff:hit.t-p.T,sim:r,hit};
-}
-function solve(p){
- // Search for a launch angle whose simulated travel time at D matches T.
- let best=null;
- for(let deg=-20;deg<=75;deg+=0.5){
-   const q=evalAngle(p,deg*Math.PI/180);
-   if(q && (!best||Math.abs(q.diff)<Math.abs(best.q.diff))) best={deg,q};
- }
- if(!best) throw Error('この条件では計算できません。距離・球速・時間を確認してください。');
- let lo=best.deg-0.5, hi=best.deg+0.5;
- let qlo=evalAngle(p,lo*Math.PI/180), qhi=evalAngle(p,hi*Math.PI/180);
- if(qlo&&qhi&&qlo.diff*qhi.diff<=0){
-   for(let i=0;i<24;i++){
-     const mid=(lo+hi)/2, qm=evalAngle(p,mid*Math.PI/180);
-     if(!qm) break;
-     if(Math.abs(qm.diff)<0.0005){best={deg:mid,q:qm};break;}
-     if(qlo.diff*qm.diff<=0){hi=mid;qhi=qm;}else{lo=mid;qlo=qm;}
-     best={deg:mid,q:qm};
-   }
- }
- // Use a direct full-time trajectory for table/plot; report interpolation at D.
- const sim=simulate(p,best.deg*Math.PI/180);
- return {angle:best.deg,sim,end:interpolateX(sim.arr,p.D),timeError:best.q.diff};
-}
-function fmt(v,n=2){return Number.isFinite(v)?v.toFixed(n):'—';}
-function draw(arr,D){
- const c=$('plot'),ctx=c.getContext('2d'),W=c.width,H=c.height;
- ctx.clearRect(0,0,W,H);
- const pts=arr.filter(a=>a.x<=D).concat(arr.filter(a=>a.x>D).slice(0,1));
- if(pts.length<2)return;
- const maxX=D, minZ=Math.min(-0.5,...pts.map(p=>p.z)),maxZ=Math.max(2,...pts.map(p=>p.z+1.5));
- const pad={l:44,r:16,t:16,b:30};
- const X=x=>pad.l+x/maxX*(W-pad.l-pad.r);
- const Y=z=>H-pad.b-(z-minZ)/(maxZ-minZ)*(H-pad.t-pad.b);
- ctx.strokeStyle='#dce3ed';ctx.lineWidth=1;
- for(let i=0;i<=4;i++){const z=minZ+(maxZ-minZ)*i/4;ctx.beginPath();ctx.moveTo(pad.l,Y(z));ctx.lineTo(W-pad.r,Y(z));ctx.stroke();ctx.fillStyle='#657188';ctx.font='12px sans-serif';ctx.fillText(z.toFixed(1),4,Y(z)+4);}
- for(let i=0;i<=4;i++){const x=maxX*i/4;ctx.beginPath();ctx.moveTo(X(x),pad.t);ctx.lineTo(X(x),H-pad.b);ctx.stroke();ctx.fillStyle='#657188';ctx.fillText(x.toFixed(0),X(x)-7,H-8);}
- ctx.strokeStyle='#2463eb';ctx.lineWidth=3;ctx.beginPath();
- pts.forEach((p,i)=>{const xx=X(p.x),yy=Y(p.z+1.5);if(i===0)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy)});ctx.stroke();
- ctx.strokeStyle='#dc6b36';ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(pad.l,Y(1.5));ctx.lineTo(W-pad.r,Y(1.5));ctx.stroke();ctx.setLineDash([]);
- ctx.fillStyle='#2463eb';ctx.font='13px sans-serif';ctx.fillText('推定軌道',pad.l+8,pad.t+14);
-}
-function calculate(){
- try{
- const p=params();
- if(!(p.D>0&&p.v0>0&&p.T>0&&p.spin>=0&&p.eff>=0&&p.eff<=1))throw Error('入力値を確認してください。');
- const minTime=p.D/p.v0;
- if(p.T<minTime*0.90)throw Error('到達時間が短すぎます。距離と球速を確認してください。');
- const r=solve(p);
- $('angle').textContent=fmt(r.angle,1)+'°';
- const heightAt=x=>{const q=interpolateX(r.sim.arr,x);return q?1.5+q.z:null;};
- $('h10').textContent=fmt(heightAt(Math.min(10,p.D)),2);
- $('h20').textContent=fmt(heightAt(Math.min(20,p.D)),2);
- $('h30').textContent=fmt(heightAt(Math.min(30,p.D)),2);
- $('hMid').textContent=fmt(heightAt(p.D/2),2);
- $('endErr').textContent=fmt(r.end? r.end.z:NaN,2)+' m';
- const rows=[];
- for(let x=0;x<=p.D+1e-6;x+=10){
-  const q=interpolateX(r.sim.arr,Math.min(x,p.D));
-  if(q)rows.push(`<tr><td>${fmt(Math.min(x,p.D),1)} m</td><td>${fmt(1.5+q.z,2)}</td><td>${fmt(q.t,3)}</td><td>${fmt(q.v,2)}</td></tr>`);
-  if(x>=p.D)break;
- }
- if(Math.round(p.D/10)*10!==p.D){
-   const q=r.end;if(q)rows.push(`<tr><td>${fmt(p.D,1)} m（終点）</td><td>${fmt(1.5+q.z,2)}</td><td>${fmt(q.t,3)}</td><td>${fmt(q.v,2)}</td></tr>`);
- }
- $('rows').innerHTML=rows.join('');
- draw(r.sim.arr,p.D);
- const good=Math.abs(r.timeError)<0.03;
- $('status').className='status '+(good?'good':'');
- $('status').textContent=`計算完了。投射角度 ${fmt(r.angle,1)}°。目標距離での到達時間の残差：約 ${fmt(r.timeError,3)} s。係数と回転モデルは暫定値のため、軌道は検証前の推定値です。`;
- }catch(e){$('status').className='status error';$('status').textContent=e.message;}
-}
-$('calculate').addEventListener('click',calculate);
-$('reset').addEventListener('click',()=>{Object.entries(defaults).forEach(([k,v])=>$(k).value=v);calculate();});
-calculate();
+(() => {
+  const g = 9.81;
+  const $ = id => document.getElementById(id);
+  const fmt = (n, d=2) => Number.isFinite(n) ? n.toFixed(d) : "—";
+
+  function calculate() {
+    const D = Number($("distance").value);
+    const v = Number($("speed").value);
+    const T = Number($("time").value);
+    const h0 = Number($("height").value);
+    const msg = $("message");
+    if (!(D > 0 && v > 0 && T > 0 && h0 >= 0) || ![D,v,T,h0].every(Number.isFinite)) {
+      msg.className = "notice error";
+      msg.textContent = "距離・球速・時間・高さに有効な数値を入力してください。";
+      return;
+    }
+    const s = g*T/(2*v);
+    if (s > 1) {
+      msg.className = "notice error";
+      msg.textContent = "この球速と到達時間では、同じ高さに戻る投射角度を計算できません。到達時間を短くするか、球速を大きくしてください。";
+      $("angle").textContent = $("range").textContent = $("targetHeight").textContent = $("rangeDiff").textContent = "計算不可";
+      $("rows").innerHTML = "";
+      $("plot").innerHTML = "";
+      return;
+    }
+    // Equal launch/landing height: choose the forward, lower-angle solution.
+    const theta = Math.asin(s);
+    const vx = v*Math.cos(theta);
+    const vy = v*Math.sin(theta);
+    const range = vx*T;
+    const diff = range-D;
+    const yAt = x => h0 + x*Math.tan(theta) - g*x*x/(2*vx*vx);
+    const tAt = x => x/vx;
+    const speedAt = x => Math.hypot(vx, vy-g*tAt(x));
+    const yD = yAt(D);
+
+    $("angle").textContent = fmt(theta*180/Math.PI, 2) + "°";
+    $("range").textContent = fmt(range) + " m";
+    $("targetHeight").textContent = D <= range ? fmt(yD) + " m" : "着地後";
+    $("rangeDiff").textContent = (diff >= 0 ? "+" : "") + fmt(diff) + " m";
+    if (Math.abs(diff) < 0.05) {
+      msg.className = "notice ok";
+      msg.textContent = "指定距離と計算距離はほぼ一致しています。";
+    } else {
+      msg.className = "notice";
+      msg.textContent = `指定距離 ${fmt(D)} m と、球速・到達時間から計算した距離 ${fmt(range)} m は一致しません。投射角度は球速と到達時間、同じ高さに着地する条件を優先して算出しています。`;
+    }
+
+    const tbody = $("rows");
+    tbody.innerHTML = "";
+    const xs = [];
+    for (let x=10; x<range-1e-6; x+=10) xs.push(x);
+    if (D < range && !xs.some(x=>Math.abs(x-D)<0.05)) xs.push(D);
+    xs.push(range);
+    xs.sort((a,b)=>a-b);
+    const unique = xs.filter((x,i,a)=>i===0 || Math.abs(x-a[i-1])>0.05);
+    unique.forEach(x => {
+      const t = tAt(x);
+      const y = Math.max(0, yAt(x));
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${fmt(x)} m${Math.abs(x-range)<0.05 ? "（着地点）" : Math.abs(x-D)<0.05 ? "（指定距離）" : ""}</td><td>${fmt(t,3)} s</td><td>${fmt(y)} m</td><td>${fmt(speedAt(x))} m/s</td>`;
+      tbody.appendChild(tr);
+    });
+    drawPlot(range, h0, theta, vx, D);
+  }
+
+  function drawPlot(range, h0, theta, vx, D) {
+    const svg = $("plot");
+    const W=700,H=300,L=48,R=18,T=18,B=38;
+    const pw=W-L-R, ph=H-T-B;
+    const maxY=Math.max(h0+1, h0+Math.pow(vx*Math.tan(theta),2)/(2*g)+0.5);
+    const xMax=Math.max(range, D)*1.03;
+    const X=x=>L+(x/xMax)*pw;
+    const Y=y=>H-B-(y/maxY)*ph;
+    let s = "";
+    for(let i=0;i<=4;i++){
+      const y=maxY*i/4, yy=Y(y);
+      s += `<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#e0e7e3"/>`;
+      s += `<text x="${L-8}" y="${yy+4}" font-size="11" text-anchor="end" fill="#5d6b64">${y.toFixed(1)}</text>`;
+    }
+    for(let i=0;i<=4;i++){
+      const x=xMax*i/4, xx=X(x);
+      s += `<line x1="${xx}" y1="${T}" x2="${xx}" y2="${H-B}" stroke="#edf1ee"/>`;
+      s += `<text x="${xx}" y="${H-13}" font-size="11" text-anchor="middle" fill="#5d6b64">${x.toFixed(0)}</text>`;
+    }
+    let path="";
+    const n=100;
+    for(let i=0;i<=n;i++){
+      const x=range*i/n;
+      const y=Math.max(0,h0+x*Math.tan(theta)-g*x*x/(2*vx*vx));
+      path += `${i===0?"M":"L"}${X(x).toFixed(2)},${Y(y).toFixed(2)} `;
+    }
+    s += `<path d="${path}" fill="none" stroke="#19734b" stroke-width="3" stroke-linecap="round"/>`;
+    if(D<=range){
+      const yd=h0+D*Math.tan(theta)-g*D*D/(2*vx*vx);
+      s += `<line x1="${X(D)}" y1="${T}" x2="${X(D)}" y2="${H-B}" stroke="#bd7b18" stroke-dasharray="5 4"/>`;
+      s += `<circle cx="${X(D)}" cy="${Y(yd)}" r="5" fill="#bd7b18"/>`;
+    }
+    s += `<text x="${W/2}" y="${H-1}" font-size="12" text-anchor="middle" fill="#36443c">水平距離（m）</text>`;
+    s += `<text x="13" y="${H/2}" font-size="12" text-anchor="middle" fill="#36443c" transform="rotate(-90 13 ${H/2})">高さ（m）</text>`;
+    svg.innerHTML=s;
+  }
+  $("calculate").addEventListener("click", calculate);
+  ["distance","speed","time","height"].forEach(id => $(id).addEventListener("change", calculate));
+  calculate();
+})();
 </script>
 </body>
 </html>
