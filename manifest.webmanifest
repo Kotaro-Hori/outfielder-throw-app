@@ -1,0 +1,10 @@
+{
+  "name": "外野送球 軌道シミュレーター",
+  "short_name": "外野送球",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f3f6fa",
+  "theme_color": "#142d4e",
+  "lang": "ja",
+  "description": "外野手の送球軌道を推定する個人用試作アプリ"
+}
